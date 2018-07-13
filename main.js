@@ -16,40 +16,51 @@ if(args){
     if(file == '.DS_Store'){
       console.log(file + ' ignored');
     } else {
+      console.log("Reading of " + imageFolder + file + " was successfull!");
       paths.push(imageFolder + file);
-      var data = base64Img.base64Sync(imageFolder + file);
-      var base = data.replace('data:image/png;base64,', '');
-
-      app.models.predict(Clarifai.GENERAL_MODEL, {base64: base})
-      .then(
-        function(response) {
-          createJson(response);
-        },
-        function(err) {
-          console.error(err);
-        }
-      );
+      encodeBase64(file);
     }
   })
+} else {
+  console.log("Please specify an input directory!");
 }
 
-function base64_encode(file) {
-    // read binary data
-    var bitmap = fs.readFileSync(file);
-    // convert binary data to base64 encoded string
-    return new Buffer(bitmap).toString('base64');
+function encodeBase64(file){
+  var ext = file.substr(file.lastIndexOf('.') + 1);
+  console.log("Encoding " + imageFolder + file + " into BASE64...");
+  var data = base64Img.base64Sync(imageFolder + file);
+  console.log("Encoding of" + imageFolder + file + " was successfull!");
+  var base = data.replace('data:image/' + ext + ';base64,', '');
+  console.log("Running prediction model..");
+  runPrediction(base);
+}
+
+function runPrediction(b){
+  app.models.predict(Clarifai.GENERAL_MODEL, {base64: b})
+  .then(
+    function(response) {
+      console.log("CLARIFAI prediction run successfully!");
+      createJson(response);
+    },
+    function(err) {
+      console.error(err);
+    }
+  );
 }
 
 function createJson(res){
+  console.log("Creating JSON");
   var obj = { table: [] }
   obj.table.push(res);
   var json = JSON.stringify(obj);
+
   writeToFile(json);
 };
 
 function writeToFile(json){
-  fs.writeFile('json.json', json, function (err) {
+  console.log("Writing JSON to file...");
+  fs.appendFile('json.json', json, function (err) {
     if(err) throw err;
-    console.log("success");
+    console.log("Response added to json.json");
   });
 };
